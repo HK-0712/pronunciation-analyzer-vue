@@ -1,6 +1,6 @@
 <!-- src/components/PronunciationAnalyzer.vue (The Final, Absolute, Shameful Fix) -->
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import Recorder from 'recorder-core';
 import 'recorder-core/src/engine/wav.js';
@@ -15,8 +15,32 @@ const statusMessage = ref('');
 const isRecording = ref(false);
 let rec;
 
-// --- API 設定 ---
-const API_BASE_URL = 'https://b40c635fc726.ngrok-free.app'; // 請確保這是您最新的 Ngrok URL
+// --- 【【【 核心修改：動態 API URL 】】】 ---
+const apiBaseUrl = ref(''); // 用於雙向綁定輸入框
+const savedApiBaseUrl = ref(''); // 儲存並實際使用的 URL
+
+// onMounted 會在元件掛載到頁面後執行
+onMounted(() => {
+  // 嘗試從瀏覽器的 localStorage 中讀取已儲存的 URL
+  const storedUrl = localStorage.getItem('ngrokApiBaseUrl');
+  if (storedUrl) {
+    apiBaseUrl.value = storedUrl;
+    savedApiBaseUrl.value = storedUrl;
+    statusMessage.value = '已載入儲存的後端位址。';
+  } else {
+    statusMessage.value = '請輸入並儲存您的後端 Ngrok 位址。';
+  }
+});
+
+// 儲存 URL 的函數
+const saveApiUrl = () => {
+  // 移除結尾可能存在的斜線，確保路徑拼接正確
+  const cleanedUrl = apiBaseUrl.value.trim().replace(/\/$/, '');
+  savedApiBaseUrl.value = cleanedUrl;
+  localStorage.setItem('ngrokApiBaseUrl', cleanedUrl);
+  statusMessage.value = `後端位址已更新為: ${cleanedUrl}`;
+  errorMessage.value = ''; // 清除舊的錯誤訊息
+};
 
 // --- 核心功能：錄音與分析 ---
 const toggleRecording = ( ) => {
@@ -67,7 +91,7 @@ const analyzePronunciation = async (wavBlob) => {
   formData.append('language', language.value);
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/v1/recognize`, formData, {
+    const response = await axios.post(`${savedApiBaseUrl.value}/api/v1/recognize`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     analysisResult.value = response.data;
@@ -101,12 +125,23 @@ const getPhonemeClass = (phoneme) => {
 
 <template>
   <div class="analyzer-container">
+    <!-- 【【【 新增的 Ngrok URL 輸入區域 】】】 -->
+    <div class="api-url-section">
+      <label for="api-url">Backend Ngrok URL:</label>
+      <input type="text" id="api-url" v-model="apiBaseUrl" placeholder="例如: https://xxxx.ngrok-free.app">
+      <button @click="saveApiUrl">儲存</button>
+    </div>
     <!-- 輸入區域 -->
     <div class="input-section">
       <label for="sentence">Target Sentence:</label>
       <input type="text" id="sentence" v-model="targetSentence">
-      <button @click="toggleRecording" :class="{ 'recording': isRecording }" :disabled="isLoading">
-        {{ isRecording ? 'Stop & Analyze' : (isLoading ? 'Analyzing...' : 'Start Recording') }}
+      <button 
+        @click="toggleRecording" 
+        :class="{ 'recording': isRecording }" 
+        :disabled="isLoading || !savedApiBaseUrl"
+        :title="!savedApiBaseUrl ? '請先輸入並儲存後端位址' : ''"
+      >
+        {{ isRecording ? 'Stop & Analyze' : (isLoading ? 'Analyzing...' : 'Start Recording' ) }}
       </button>
     </div>
 
@@ -114,7 +149,7 @@ const getPhonemeClass = (phoneme) => {
     <div v-if="statusMessage" class="status-message">{{ statusMessage }}</div>
     <div v-if="errorMessage" class="status-message error">{{ errorMessage }}</div>
 
-    <!-- 結果顯示區域 (使用防禦性渲染) -->
+    <!-- 結果顯示區域 (使用我們最終修正的、包含所有細節的版本) -->
     <div v-if="analysisResult && analysisResult.summary && analysisResult.words" class="report-container">
       <pre class="report-pre">
 ======================================================================
@@ -133,8 +168,8 @@ User    : <span v-for="(word, index) in analysisResult.words" :key="`user-${inde
 - Total Words:           {{ analysisResult.summary.totalWords }}
 - Correct Words:         {{ analysisResult.summary.correctWords }}
 - Incorrect Words:       {{ analysisResult.summary.totalWords - analysisResult.summary.correctWords }}
-- Phoneme Error Rate:    {{ analysisResult.summary.phonemeErrorRate.toFixed(2) }}%
-- Analysis Timestamp:    {{ new Date(analysisResult.analysisTimestampUTC).toLocaleString() }}
+- Phoneme Error Rate:    {{ analysisResult.summary.phonemeErrorRate.toFixed(2) }}% ({{ analysisResult.summary.total_errors }} errors in {{ analysisResult.summary.total_target_phonemes }} target phonemes)
+- Analysis Timestamp:    {{ analysisResult.analysisTimestampUTC }}
 
 ======================================================================
       </pre>
@@ -143,6 +178,39 @@ User    : <span v-for="(word, index) in analysisResult.words" :key="`user-${inde
 </template>
 
 <style scoped>
+/* 新增 API URL 區域的樣式 */
+.api-url-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  background-color: #2f343d;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+.api-url-section label {
+  font-weight: bold;
+  white-space: nowrap;
+}
+.api-url-section input {
+  flex-grow: 1;
+  padding: 0.5rem;
+  background-color: #333;
+  border: 1px solid #444;
+  color: #e1e1e1;
+  border-radius: 4px;
+}
+.api-url-section button {
+  padding: 0.5rem 1rem;
+  background-color: #5c6bc0; /* Indigo color */
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
 .analyzer-container {
   background-color: #20232a;
   border: 1px solid #444;
