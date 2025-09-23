@@ -176,13 +176,13 @@ const padPhoneme = (phonemeStr) => {
       <!-- 不再使用 <pre>，改用普通的 div -->
       <div class="report-content">
         <div class="report-title-container">
-          <div class="title-line">======================================================================</div>
+          <hr class="report-divider main">
           <div class="title-text">Pronunciation Analysis</div>
-          <div class="title-line">======================================================================</div>
+          <hr class="report-divider main">
         </div>
 
         <div class="report-section">
-          Sentence: {{ analysisResult.sentence }}
+        Sentence: {{ analysisResult.sentence }}
         </div>
 
         <!-- Target 行 (保持不變) -->
@@ -206,9 +206,9 @@ const padPhoneme = (phonemeStr) => {
         </div>
 
         <div class="report-title-container">
-          <div class="title-line">----------------------------------------------------------------------</div>
+          <hr class="report-divider sub">
           <div class="title-text">[ Summary ]</div>
-          <div class="title-line">----------------------------------------------------------------------</div>
+          <hr class="report-divider sub">
         </div>
 
         <!-- 關鍵修改：為 Summary 的每一項都用 div 包裹，以確保換行 -->
@@ -222,7 +222,7 @@ const padPhoneme = (phonemeStr) => {
         </div>
 
         <div class="report-title-container">
-          <div class="title-line">======================================================================</div>
+          <hr class="report-divider main">
         </div>
       </div>
     </div>
@@ -341,28 +341,24 @@ const padPhoneme = (phonemeStr) => {
 
 /* 新增：標題容器樣式 */
 .report-title-container {
-  text-align: center; /* 讓容器內的所有內容（包括分隔線和標題）都置中 */
+  text-align: center;
   margin: 1rem 0;
 }
 
-/* 新增：標題文本樣式 */
-.title-text {
-  font-weight: bold;
+.report-divider {
+  border: none;
+  height: 2px;
+  background: linear-gradient(to right, #444 0%, #888 50%, #444 100%);
+  margin: 0.5em 0;
+  width: 100%;
 }
-
-/* 新增：分隔線樣式 */
-.title-line {
-  white-space: pre; /* 保留分隔線的樣式 */
+.report-divider.main {
+  height: 3px;
+  background: linear-gradient(to right, #444 0%, #fff 50%, #444 100%);
 }
-
-.report-section {
-  white-space: pre-wrap;
-  margin-bottom: 1rem;
-}
-
-.summary-details {
-  white-space: pre; /* 保留每行開頭的 `-` 和空格對齊 */
-  line-height: 1.8;
+.report-divider.sub {
+  height: 2px;
+  background: linear-gradient(to right, #444 0%, #aaa 50%, #444 100%);
 }
 
 .analysis-line {
