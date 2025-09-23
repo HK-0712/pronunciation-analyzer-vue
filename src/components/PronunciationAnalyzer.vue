@@ -1,6 +1,6 @@
 <!-- src/components/PronunciationAnalyzer.vue (The Final, Absolute, Shameful Fix) -->
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue'; // 引入 computed
 import axios from 'axios';
 import Recorder from 'recorder-core';
 import 'recorder-core/src/engine/wav.js';
@@ -121,6 +121,27 @@ const getPhonemeClass = (phoneme) => {
   }
   return 'phoneme-correct';
 };
+
+const maxPhonemeLength = computed(() => {
+  if (!analysisResult.value || !analysisResult.value.words) return 1;
+  let maxLength = 1;
+  analysisResult.value.words.forEach(word => {
+    if (word.phonemes) {
+      word.phonemes.forEach(p => {
+        if (p.target && p.target.length > maxLength) maxLength = p.target.length;
+        if (p.user && p.user.length > maxLength) maxLength = p.user.length;
+      });
+    }
+  });
+  return maxLength;
+});
+
+const padPhoneme = (phonemeStr) => {
+  const phoneme = phonemeStr || '';
+  const padding = ' '.repeat(maxPhonemeLength.value - phoneme.length);
+  return phoneme + padding;
+};
+
 </script>
 
 <template>
@@ -158,8 +179,8 @@ const getPhonemeClass = (phoneme) => {
 
 Sentence: {{ analysisResult.sentence }}
 
-Target  : <span v-for="(word, index) in analysisResult.words" :key="`target-${index}`">[ <span v-for="(p, pIndex) in word.phonemes" :key="`t-${pIndex}`">{{ p.target }} </span>] </span>
-User    : <span v-for="(word, index) in analysisResult.words" :key="`user-${index}`">[ <span v-for="(p, pIndex) in word.phonemes" :key="`u-${pIndex}`" :class="getPhonemeClass(p)">{{ p.user }} </span>] </span>
+Target  : <span v-for="(word, index) in analysisResult.words" :key="`target-${index}`">[ <span v-for="(p, pIndex) in word.phonemes" :key="`t-${pIndex}`">{{ padPhoneme(p.target) }} </span>] </span>
+User    : <span v-for="(word, index) in analysisResult.words" :key="`user-${index}`">[ <span v-for="(p, pIndex) in word.phonemes" :key="`u-${pIndex}`" :class="getPhonemeClass(p)">{{ padPhoneme(p.user) }} </span>] </span>
 
 ----------------------------------------------------------------------
 [ Summary ]
