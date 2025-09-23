@@ -139,20 +139,21 @@ const maxPhonemeLength = computed(() => {
 const padPhoneme = (phonemeStr) => {
   const phoneme = phonemeStr || '';
   const padding = ' '.repeat(maxPhonemeLength.value - phoneme.length);
-  return phoneme + padding;
+  // 在補齊寬度後，再額外加上一個分隔用的空格
+  return phoneme + padding + ' '; 
 };
 
 </script>
 
 <template>
   <div class="analyzer-container">
-    <!-- 【【【 新增的 Ngrok URL 輸入區域 】】】 -->
+    <!-- URL 輸入區域 (保持不變) -->
     <div class="api-url-section">
       <label for="api-url">Backend Ngrok URL:</label>
       <input type="text" id="api-url" v-model="apiBaseUrl" placeholder="例如: https://xxxx.ngrok-free.app">
       <button @click="saveApiUrl">儲存</button>
     </div>
-    <!-- 輸入區域 -->
+    <!-- 輸入區域 (保持不變 ) -->
     <div class="input-section">
       <label for="sentence">Target Sentence:</label>
       <input type="text" id="sentence" v-model="targetSentence">
@@ -166,37 +167,68 @@ const padPhoneme = (phonemeStr) => {
       </button>
     </div>
 
-    <!-- 狀態顯示區域 -->
+    <!-- 狀態顯示區域 (保持不變) -->
     <div v-if="statusMessage" class="status-message">{{ statusMessage }}</div>
     <div v-if="errorMessage" class="status-message error">{{ errorMessage }}</div>
 
-    <!-- 結果顯示區域 (使用我們最終修正的、包含所有細節的版本) -->
+    <!-- 結果顯示區域 (已重構為 Flexbox 佈局) -->
     <div v-if="analysisResult && analysisResult.summary && analysisResult.words" class="report-container">
-      <pre class="report-pre">
-======================================================================
-                        Pronunciation Analysis
-======================================================================
+      <!-- 不再使用 <pre>，改用普通的 div -->
+      <div class="report-content">
+        <div class="report-title-container">
+          <div class="title-line">======================================================================</div>
+          <div class="title-text">Pronunciation Analysis</div>
+          <div class="title-line">======================================================================</div>
+        </div>
 
-Sentence: {{ analysisResult.sentence }}
+        <div class="report-section">
+          Sentence: {{ analysisResult.sentence }}
+        </div>
 
-Target  : <span v-for="(word, index) in analysisResult.words" :key="`target-${index}`">[ <span v-for="(p, pIndex) in word.phonemes" :key="`t-${pIndex}`">{{ padPhoneme(p.target) }} </span>] </span>
-User    : <span v-for="(word, index) in analysisResult.words" :key="`user-${index}`">[ <span v-for="(p, pIndex) in word.phonemes" :key="`u-${pIndex}`" :class="getPhonemeClass(p)">{{ padPhoneme(p.user) }} </span>] </span>
+        <!-- Target 行 (保持不變) -->
+        <div class="analysis-line">
+          <span class="line-label">Target&nbsp;&nbsp;:</span>
+          <div class="phoneme-wrapper">
+            <span class="word-block" v-for="(word, index) in analysisResult.words" :key="`target-word-${index}`">
+              [ <span v-for="(p, pIndex) in word.phonemes" :key="`t-phoneme-${pIndex}`">{{ padPhoneme(p.target) }}</span>]
+            </span>
+          </div>
+        </div>
 
-----------------------------------------------------------------------
-[ Summary ]
-----------------------------------------------------------------------
-- Overall Score:         {{ analysisResult.summary.overallScore.toFixed(1) }}%
-- Total Words:           {{ analysisResult.summary.totalWords }}
-- Correct Words:         {{ analysisResult.summary.correctWords }}
-- Incorrect Words:       {{ analysisResult.summary.totalWords - analysisResult.summary.correctWords }}
-- Phoneme Error Rate:    {{ analysisResult.summary.phonemeErrorRate.toFixed(2) }}% ({{ analysisResult.summary.total_errors }} errors in {{ analysisResult.summary.total_target_phonemes }} target phonemes)
-- Analysis Timestamp:    {{ analysisResult.analysisTimestampUTC }}
+        <!-- User 行 (保持不變) -->
+        <div class="analysis-line">
+          <span class="line-label">User&nbsp;&nbsp;&nbsp;&nbsp;:</span>
+          <div class="phoneme-wrapper">
+            <span class="word-block" v-for="(word, index) in analysisResult.words" :key="`user-word-${index}`">
+              [ <span v-for="(p, pIndex) in word.phonemes" :key="`u-phoneme-${pIndex}`" :class="getPhonemeClass(p)">{{ padPhoneme(p.user) }}</span>]
+            </span>
+          </div>
+        </div>
 
-======================================================================
-      </pre>
+        <div class="report-title-container">
+          <div class="title-line">----------------------------------------------------------------------</div>
+          <div class="title-text">[ Summary ]</div>
+          <div class="title-line">----------------------------------------------------------------------</div>
+        </div>
+
+        <!-- 關鍵修改：為 Summary 的每一項都用 div 包裹，以確保換行 -->
+        <div class="summary-details">
+          <div>- Overall Score:         {{ analysisResult.summary.overallScore.toFixed(1) }}%</div>
+          <div>- Total Words:           {{ analysisResult.summary.totalWords }}</div>
+          <div>- Correct Words:         {{ analysisResult.summary.correctWords }}</div>
+          <div>- Incorrect Words:       {{ analysisResult.summary.totalWords - analysisResult.summary.correctWords }}</div>
+          <div>- Phoneme Error Rate:    {{ analysisResult.summary.phonemeErrorRate.toFixed(2) }}% ({{ analysisResult.summary.total_errors }} errors in {{ analysisResult.summary.total_target_phonemes }} target phonemes)</div>
+          <div>- Analysis Timestamp:    {{ analysisResult.analysisTimestampUTC }}</div>
+        </div>
+
+        <div class="report-title-container">
+          <div class="title-line">======================================================================</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 /* 新增 API URL 區域的樣式 */
@@ -295,15 +327,64 @@ User    : <span v-for="(word, index) in analysisResult.words" :key="`user-${inde
   margin-top: 2rem;
 }
 
-.report-pre {
+/* 刪除您原有的 .report-pre 樣式 */
+
+.report-content {
   background-color: #1a1a1a;
   padding: 1.5rem;
   border-radius: 8px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  border: 1px solid #444;
+  font-family: monospace;
   font-size: 1rem;
   line-height: 1.6;
-  border: 1px solid #444;
+}
+
+/* 新增：標題容器樣式 */
+.report-title-container {
+  text-align: center; /* 讓容器內的所有內容（包括分隔線和標題）都置中 */
+  margin: 1rem 0;
+}
+
+/* 新增：標題文本樣式 */
+.title-text {
+  font-weight: bold;
+}
+
+/* 新增：分隔線樣式 */
+.title-line {
+  white-space: pre; /* 保留分隔線的樣式 */
+}
+
+.report-section {
+  white-space: pre-wrap;
+  margin-bottom: 1rem;
+}
+
+.summary-details {
+  white-space: pre; /* 保留每行開頭的 `-` 和空格對齊 */
+  line-height: 1.8;
+}
+
+.analysis-line {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.line-label {
+  flex-shrink: 0;
+  white-space: pre;
+}
+
+.phoneme-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.word-block {
+  display: inline-block;
+  white-space: pre;
+  margin-right: 0.5em;
 }
 
 .phoneme-correct { color: #a5d6a7; }
