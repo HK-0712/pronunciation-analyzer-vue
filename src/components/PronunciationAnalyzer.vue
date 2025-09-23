@@ -181,13 +181,14 @@ const padPhoneme = (phonemeStr) => {
           <hr class="report-divider main">
         </div>
 
-        <div class="report-section">
-        Sentence: {{ analysisResult.sentence }}
+        <!-- 統一三行的外層 class，讓 y 間距一致 -->
+        <div class="analysis-line">
+          <span class="line-label">Sentence : </span>
+          <span>{{ analysisResult.sentence }}</span>
         </div>
 
-        <!-- Target 行 (保持不變) -->
         <div class="analysis-line">
-          <span class="line-label">Target&nbsp;&nbsp;:</span>
+          <span class="line-label">Target&nbsp;&nbsp; :</span>
           <div class="phoneme-wrapper">
             <span class="word-block" v-for="(word, index) in analysisResult.words" :key="`target-word-${index}`">
               [ <span v-for="(p, pIndex) in word.phonemes" :key="`t-phoneme-${pIndex}`">{{ padPhoneme(p.target) }}</span>]
@@ -195,9 +196,8 @@ const padPhoneme = (phonemeStr) => {
           </div>
         </div>
 
-        <!-- User 行 (保持不變) -->
         <div class="analysis-line">
-          <span class="line-label">User&nbsp;&nbsp;&nbsp;&nbsp;:</span>
+          <span class="line-label">User&nbsp;&nbsp;&nbsp;&nbsp; :</span>
           <div class="phoneme-wrapper">
             <span class="word-block" v-for="(word, index) in analysisResult.words" :key="`user-word-${index}`">
               [ <span v-for="(p, pIndex) in word.phonemes" :key="`u-phoneme-${pIndex}`" :class="getPhonemeClass(p)">{{ padPhoneme(p.user) }}</span>]
