@@ -6,7 +6,7 @@
   import 'recorder-core/src/engine/wav.js';
 
   // --- 狀態變數 ---
-  const targetSentence = ref('how was your day');
+  const targetSentence = ref('');
   const analysisResult = ref(null);
   const isLoading = ref(false);
   const errorMessage = ref('');
@@ -71,12 +71,16 @@
       rec.stop(
         (blob, duration) => {
           statusMessage.value = '錄音結束，正在上傳分析...';
+          rec.close();
           analyzePronunciation(blob);
         },
         (err) => {
           errorMessage.value = `錄音出錯: ${err}`;
           statusMessage.value = '';
           isRecording.value = false;
+          if (rec) {
+            rec.close();
+          }
         }
       );
     } else {
@@ -134,6 +138,36 @@
 
   // 【【【【【 罪 魁 禍 首 在 這 裡，現 在 已 經 加 回 來 了 】】】】】
   // --- 輔助函數 ---
+  // 1. 修正 Unicode 視覺寬度計算
+  const getVisualLength = (str) => {
+    if (!str) return 0;
+    // 這個正則表達式會移除所有 Unicode 組合標記 (如鼻化符 ~)
+    // \p{M} 是 Unicode 屬性轉義，匹配所有 "Mark" 類別的字元
+    // 'u' 標誌啟用 Unicode 支持
+    return str.replace(/\p{M}/gu, '').length;
+  };
+
+  // 2. 獲取單個單詞中，每一「列」的最大視覺寬度
+  const getColumnWidths = (word) => {
+    if (!word || !word.phonemes) return [];
+    const widths = [];
+    for (let i = 0; i < word.phonemes.length; i++) {
+      const p = word.phonemes[i];
+      const targetLen = getVisualLength(p.target);
+      const userLen = getVisualLength(p.user);
+      widths.push(Math.max(targetLen, userLen, 1)); // 最小寬度為 1
+    }
+    return widths;
+  };
+
+  // 3. 根據「列寬度」來填充單個音素
+  const padPhoneme = (phonemeStr, columnWidth) => {
+    const visualLen = getVisualLength(phonemeStr);
+    const padding = ' '.repeat(columnWidth - visualLen);
+    return phonemeStr + padding + ' '; // 填充後再加一個分隔空格
+  };
+
+  // 4. getPhonemeClass 保持不變
   const getPhonemeClass = (phoneme) => {
     if (!phoneme.isMatch) {
       if (phoneme.user === '-') return 'phoneme-omission';
@@ -141,27 +175,6 @@
       return 'phoneme-substitution';
     }
     return 'phoneme-correct';
-  };
-
-  const maxPhonemeLength = computed(() => {
-    if (!analysisResult.value || !analysisResult.value.words) return 1;
-    let maxLength = 1;
-    analysisResult.value.words.forEach(word => {
-      if (word.phonemes) {
-        word.phonemes.forEach(p => {
-          if (p.target && p.target.length > maxLength) maxLength = p.target.length;
-          if (p.user && p.user.length > maxLength) maxLength = p.user.length;
-        });
-      }
-    });
-    return maxLength;
-  });
-
-  const padPhoneme = (phonemeStr) => {
-    const phoneme = phonemeStr || '';
-    const padding = ' '.repeat(maxPhonemeLength.value - phoneme.length);
-    // 在補齊寬度後，再額外加上一個分隔用的空格
-    return phoneme + padding + ' '; 
   };
 
   </script>
@@ -189,7 +202,7 @@
       <!-- 輸入區域 (保持不變 ) -->
       <div class="input-section">
         <label for="sentence">Target Sentence:</label>
-        <input type="text" id="sentence" v-model="targetSentence">
+        <input type="text" id="sentence" v-model="targetSentence" placeholder="Enter a sentence here">
         <button 
           @click="toggleRecording" 
           :class="{ 'recording': isRecording }" 
@@ -223,8 +236,13 @@
           <div class="analysis-line">
             <span class="line-label">Target&nbsp;&nbsp; :</span>
             <div class="phoneme-wrapper">
-              <span class="word-block" v-for="(word, index) in analysisResult.words" :key="`target-word-${index}`">
-                [ <span v-for="(p, pIndex) in word.phonemes" :key="`t-phoneme-${pIndex}`">{{ padPhoneme(p.target) }}</span>]
+              <!-- 對於每個單詞，我們先計算列寬度 -->
+              <span class="word-block" v-for="(word, wordIndex) in analysisResult.words" :key="`target-word-${wordIndex}`">
+                <template v-if="word.phonemes">
+                  [ <span v-for="(p, pIndex) in word.phonemes" :key="`t-phoneme-${pIndex}`">
+                      {{ padPhoneme(p.target, getColumnWidths(word)[pIndex]) }}
+                    </span>]
+                </template>
               </span>
             </div>
           </div>
@@ -232,8 +250,12 @@
           <div class="analysis-line">
             <span class="line-label">User&nbsp;&nbsp;&nbsp;&nbsp; :</span>
             <div class="phoneme-wrapper">
-              <span class="word-block" v-for="(word, index) in analysisResult.words" :key="`user-word-${index}`">
-                [ <span v-for="(p, pIndex) in word.phonemes" :key="`u-phoneme-${pIndex}`" :class="getPhonemeClass(p)">{{ padPhoneme(p.user) }}</span>]
+              <span class="word-block" v-for="(word, wordIndex) in analysisResult.words" :key="`user-word-${wordIndex}`">
+                <template v-if="word.phonemes">
+                  [ <span v-for="(p, pIndex) in word.phonemes" :key="`u-phoneme-${pIndex}`" :class="getPhonemeClass(p)">
+                      {{ padPhoneme(p.user, getColumnWidths(word)[pIndex]) }}
+                    </span>]
+                </template>
               </span>
             </div>
           </div>
@@ -413,7 +435,6 @@
   .word-block {
     display: inline-block;
     white-space: pre;
-    margin-right: 0.5em;
   }
 
   .phoneme-correct { color: #a5d6a7; }
