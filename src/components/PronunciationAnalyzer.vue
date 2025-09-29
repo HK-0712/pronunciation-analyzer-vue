@@ -187,7 +187,7 @@
         <div class="api-url-section">
           <label for="api-url">Backend Ngrok URL:</label>
           <input type="text" id="api-url" v-model="apiBaseUrl" placeholder="例如: https://xxxx.ngrok-free.app">
-          <button @click="saveApiUrl">儲存</button>
+          <button @click="saveApiUrl">Save</button>
         </div>
 
         <!-- 【【【【【 新增的語言輸入區域 】】】】】 -->
@@ -196,7 +196,7 @@
           <input type="text" id="language-input" v-model="languageInput" placeholder="例如: en_us">
           <!-- 語言輸入是即時綁定的 ，不需要儲存按鈕，但為了視覺統一，可以保留 -->
           <!-- 如果不需要按鈕，可以直接刪除下面的 button 標籤 -->
-          <button @click="saveLanguage">儲存</button>
+          <button @click="saveLanguage">Save</button>
         </div>
       </div>
       <!-- 輸入區域 (保持不變 ) -->
