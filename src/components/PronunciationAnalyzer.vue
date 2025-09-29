@@ -29,9 +29,9 @@
     if (storedUrl) {
       apiBaseUrl.value = storedUrl;
       savedApiBaseUrl.value = storedUrl;
-      statusMessage.value = '已載入儲存的後端位址。';
+      statusMessage.value = '已載入儲存的 ASR 後端位址。';
     } else {
-      statusMessage.value = '請輸入並儲存您的後端 Ngrok 位址。';
+      statusMessage.value = '請輸入並儲存您的 ASR 後端位址。';
     }
 
     // --- 【【【【【 新增：讀取已儲存的語言 】】】】】 ---
@@ -185,7 +185,7 @@
       <div class="settings-container">
         <!-- 您現有的 Ngrok URL 輸入區域 -->
         <div class="api-url-section">
-          <label for="api-url">Backend Ngrok URL:</label>
+          <label for="api-url">ASR Service URL:</label>
           <input type="text" id="api-url" v-model="apiBaseUrl" placeholder="例如: https://xxxx.ngrok-free.app">
           <button @click="saveApiUrl">Save</button>
         </div>
