@@ -119,6 +119,23 @@ const analyzePronunciation = async (wavBlob) => {
     const response = await axios.post(`${savedApiBaseUrl.value}/api/v1/recognize`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+
+    // 【【【【【 新增：處理時間戳資訊 】】】】】
+    if (response.data.words) {
+      response.data.words.forEach(word => {
+        if (word.phonemes) {
+          word.phonemes.forEach(phoneme => {
+            // 確保每個音素都有時間戳屬性
+            if (phoneme.startTime === undefined) phoneme.startTime = null;
+            if (phoneme.endTime === undefined) phoneme.endTime = null;
+          });
+        }
+        // 確保每個單詞都有時間戳屬性
+        if (word.startTime === undefined) word.startTime = null;
+        if (word.endTime === undefined) word.endTime = null;
+      });
+    }
+
     analysisResult.value = response.data;
     statusMessage.value = '分析完成！';
   } catch (error) {
@@ -274,6 +291,34 @@ const getPhonemeClass = (phoneme) => {
           <div>- Incorrect Words:       {{ analysisResult.summary.totalWords - analysisResult.summary.correctWords }}</div>
           <div>- Phoneme Error Rate:    {{ analysisResult.summary.phonemeErrorRate.toFixed(2) }}% ({{ analysisResult.summary.total_errors }} errors in {{ analysisResult.summary.total_target_phonemes }} target phonemes)</div>
           <div>- Analysis Timestamp:    {{ analysisResult.analysisTimestampUTC }}</div>
+        </div>
+
+        <!-- 時間戳顯示區域 -->
+        <div class="report-title-container">
+          <hr class="report-divider sub">
+          <div class="title-text">[ Time Stamps ]</div>
+          <hr class="report-divider sub">
+        </div>
+
+        <div class="time-stamps-section">
+          <div class="time-stamp-title">Word Level:</div>
+          <div class="word-time-stamps">
+            <span v-for="(word, index) in analysisResult.words" :key="`word-time-${index}`" class="word-time-item">
+              "{{ word.word }}": {{ word.startTime !== null ? word.startTime.toFixed(2) : 'N/A' }}s - {{ word.endTime !== null ? word.endTime.toFixed(2) : 'N/A' }}s
+            </span>
+          </div>
+        </div>
+
+        <div class="time-stamps-section">
+          <div class="time-stamp-title">Phoneme Level:</div>
+          <div class="phoneme-time-stamps">
+            <div v-for="(word, wordIndex) in analysisResult.words" :key="`phoneme-time-${wordIndex}`" class="phoneme-time-word">
+              <strong>"{{ word.word }}":</strong>
+              <span v-for="(phoneme, pIndex) in word.phonemes" :key="`phoneme-${wordIndex}-${pIndex}`" class="phoneme-time-item">
+                {{ phoneme.user }} ({{ phoneme.startTime !== null ? phoneme.startTime.toFixed(2) : 'N/A' }}s-{{ phoneme.endTime !== null ? phoneme.endTime.toFixed(2) : 'N/A' }}s)
+              </span>
+            </div>
+          </div>
         </div>
 
         <div class="report-title-container">
@@ -435,6 +480,43 @@ const getPhonemeClass = (phoneme) => {
 .word-block {
   display: inline-block;
   white-space: pre;
+}
+
+.time-stamps-section {
+  margin-bottom: 1rem;
+}
+
+.time-stamp-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #61dafb;
+}
+
+.word-time-stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.word-time-item {
+  background-color: #2d3748;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.phoneme-time-word {
+  margin-bottom: 0.5rem;
+}
+
+.phoneme-time-item {
+  display: inline-block;
+  background-color: #2d3748;
+  padding: 0.2rem 0.4rem;
+  margin: 0.1rem 0.2rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
 }
 
 .phoneme-correct { color: #a5d6a7; }
