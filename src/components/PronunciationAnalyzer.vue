@@ -177,18 +177,6 @@ const getPhonemeClass = (phoneme) => {
   return 'phoneme-correct';
 };
 
-// 5. 【【【【【 新增：格式化時間戳的輔助函數 】】】】】
-const getFormattedTime = (phoneme) => {
-  // 如果音素沒有時間戳 (例如，使用者漏讀)，則回傳 '-'
-  if (phoneme.startTime === null || phoneme.endTime === null) {
-    return '-';
-  }
-  // 計算持續時間，並格式化為小數點後兩位
-  const duration = (phoneme.endTime - phoneme.startTime).toFixed(2);
-  // 回傳持續時間字串
-  return `${duration}`;
-};
-
 </script>
 
 <template>
@@ -266,21 +254,6 @@ const getFormattedTime = (phoneme) => {
               <template v-if="word.phonemes">
                 [ <span v-for="(p, pIndex) in word.phonemes" :key="`u-phoneme-${pIndex}`" :class="getPhonemeClass(p)">
                     {{ padPhoneme(p.user, getColumnWidths(word)[pIndex]) }}
-                  </span>]
-              </template>
-            </span>
-          </div>
-        </div>
-        
-        <!-- 【【【【【 新增的時間戳顯示行 】】】】】 -->
-        <div class="analysis-line">
-          <span class="line-label">Time (s) :</span>
-          <div class="phoneme-wrapper">
-            <span class="word-block" v-for="(word, wordIndex) in analysisResult.words" :key="`time-word-${wordIndex}`">
-              <template v-if="word.phonemes">
-                [ <span v-for="(p, pIndex) in word.phonemes" :key="`t-phoneme-${pIndex}`" class="phoneme-time">
-                    <!-- 呼叫一個新的輔助函數來格式化時間戳 -->
-                    {{ padPhoneme(getFormattedTime(p), getColumnWidths(word)[pIndex]) }}
                   </span>]
               </template>
             </span>
@@ -468,11 +441,4 @@ const getFormattedTime = (phoneme) => {
 .phoneme-substitution { color: #ef9a9a; font-weight: bold; }
 .phoneme-omission { color: #ffcc80; }
 .phoneme-insertion { color: #b39ddb; }
-
-/* 【【【【【 新增：時間戳的樣式 】】】】】 */
-.phoneme-time {
-  color: #82aaff; /* 使用一種不同的、清晰的藍色 */
-  opacity: 0.8;   /* 讓它稍微不那麼刺眼，作為輔助資訊 */
-}
-
 </style>
